@@ -25,7 +25,7 @@ def get_parent_path() -> "PosixPath":
 
 
 def instantiate_directory_object(parent_directory, directory_list, running_directory_list) -> DirectoryAsset:
-    directory_asset = DirectoryAsset(parent_directory)
+    directory_asset = DirectoryAsset(parent_directory, 0)
     directory_asset.populate_directories(directory_list, running_directory_list)
     return directory_asset
 
