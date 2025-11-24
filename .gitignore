@@ -1,0 +1,7 @@
+# ignore __pycache__ objects
+*.pyc
+
+# ignore files inside data/ directory
+data/*
+# but not data/ itself
+!data/.gitkeep
