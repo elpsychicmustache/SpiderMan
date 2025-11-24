@@ -23,9 +23,6 @@ def main() -> None:
     # Entering the main loop.
     navigator = DirectoryNavigator(main_directory_asset)
 
-    # TODO: Remove the following after they are ported as options into directory_navigator.
-    main_directory_asset.populate_child_directories()
-    main_directory_asset.print_asset_list()
 
 def get_parent_path() -> "PosixPath":
     script_path = Path(__file__).resolve()

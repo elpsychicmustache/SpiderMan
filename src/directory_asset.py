@@ -36,7 +36,7 @@ class DirectoryAsset():
                 directories_to_add.add(directory)
 
         for directory in directories_to_add:
-            child_directory = DirectoryAsset(directory, level=self.level+2)
+            child_directory = DirectoryAsset(directory, level=self.level+2, parent=self)
             self.add_child(child_directory)
 
         # sorting children directories by alphabetical order

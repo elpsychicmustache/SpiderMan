@@ -13,25 +13,45 @@ class DirectoryNavigator:
                 # 3: ["Change directory", self.change_directory]
                 }
 
+        # Setting the quit option, which should be the last option of main_options
+        quit_option = list(self.main_options.keys())[-1] + 1
+        self.main_options[quit_option] = ["Quit", self.quit_program]
+
         self.current_directory = current_directory
 
+        self.enter_main_loop()
+
+    def enter_main_loop(self):
+        # TODO: Implement input validation.
         self.show_main_menu()
+        option = int(input("[+] Please enter the option: "))  # must be an int
+        self.main_options.get(option)[1]()  # [1] is the function, so must use () to call the function
+        while option != max(self.main_options.keys()):
+            self.show_main_menu()
+            option = int(input("[+] Please enter the option: "))
+            self.main_options[option][1]()
 
     def show_current_directory_tree(self) -> None:
-        print(f"[+] Currently in '{self.current_directory.name}'")
+        clear_screen()
 
         self.current_directory.print_asset_list()
 
         input("Press ENTER . . .")
 
-        self.show_main_menu()
-
     def populate_child_directory(self) -> None:
-        pass
+        clear_screen()
+        self.current_directory.populate_child_directories()
 
     def show_main_menu(self) -> None:
         clear_screen()
 
-        print(f"[+] Currently in '{self.current_directory.name}'")
+        print(f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist")
         for (key, option) in self.main_options.items():
             print(f"{key} - {option[0]}")
+
+    def quit_program(self) -> None:
+        clear_screen()
+
+        input("Thanks for using - press ENTER to quit...")
+
+        clear_screen()
