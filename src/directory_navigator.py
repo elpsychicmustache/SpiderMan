@@ -2,25 +2,29 @@ import subprocess
 
 from directory_asset import DirectoryAsset
 
-def clear_screen():
+def _clear_screen():
     subprocess.run("clear")
+
 
 class DirectoryNavigator:
     def __init__(self, current_directory:DirectoryAsset) -> None:
-        self.main_options = {
-                1: ["Show directory tree", self.show_current_directory_tree],
-                2: ["Populate child directory", self.populate_child_directory],
-                3: ["Add a directory", self.add_child_directory],
-                4: ["Change directory", self.change_directory]
-                }
-
-        # Setting the quit option, which should be the last option of main_options
-        quit_option = list(self.main_options.keys())[-1] + 1
-        self.main_options[quit_option] = ["Quit", self.quit_program]
+        self.main_options = self.create_options_menu()
 
         self.current_directory = current_directory
 
         self.enter_main_loop()
+
+    def create_options_menu(self) -> dict[1, tuple]:
+        options = [
+                ("Show directory tree", self.show_current_directory_tree),
+                ("Populate child directory", self.populate_child_directory),
+                ("Add a directory", self.add_child_directory),
+                ("Change directory", self.change_directory),
+                # Add any options above "Quit" - that way, quit is last
+                ("Quit", self.quit_program)
+                ]
+
+        return {option_number: option_tuple for option_number, option_tuple in enumerate(options, start=1)}
 
     def enter_main_loop(self):
         # TODO: Implement input validation.
@@ -33,18 +37,18 @@ class DirectoryNavigator:
             self.main_options[option][1]()
 
     def show_current_directory_tree(self) -> None:
-        clear_screen()
+        _clear_screen()
 
         self.current_directory.print_asset_list()
 
         input("Press ENTER . . .")
 
     def populate_child_directory(self) -> None:
-        clear_screen()
+        _clear_screen()
         self.current_directory.populate_child_directories()
 
     def show_main_menu(self) -> None:
-        clear_screen()
+        _clear_screen()
 
         print(f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist")
         for (key, option) in self.main_options.items():
@@ -60,15 +64,12 @@ class DirectoryNavigator:
         try:
             directory_location:int = [x.name for x in DirectoryAsset.master_list].index(new_directory_name)
         except ValueError:
-            print(f"[!] {new_directory_name} is not a recognized directory.")
+            print(f"[!] '{new_directory_name}' is not a recognized directory.")
         else:
             self.current_directory = DirectoryAsset.master_list[directory_location]
+            print(f"Successfully changed to '{new_directory_name}'.")
 
         input("Press ENTER ... ")
 
     def quit_program(self) -> None:
-        clear_screen()
-
-        input("Thanks for using - press ENTER to quit...")
-
-        clear_screen()
+        _clear_screen()
