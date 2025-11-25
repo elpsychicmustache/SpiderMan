@@ -9,7 +9,7 @@ class DirectoryAsset():
         self.parent = parent
         self.children = children or {}
 
-        DirectoryAsset.master_list.append(self.name)  # keeping track of a master list to prevent recursive entries
+        DirectoryAsset.master_list.append(self)  # keeping track of a master list to prevent recursive entries
 
     def populate_directories(self, directory_string_list:str) -> None:
         directories = set(
@@ -30,7 +30,7 @@ class DirectoryAsset():
                 continue
             elif "#" in directory:
                 continue
-            elif directory in DirectoryAsset.master_list:
+            elif directory in [x.name for x in DirectoryAsset.master_list]:
                 continue
             else:
                 directories_to_add.add(directory)
@@ -51,8 +51,10 @@ class DirectoryAsset():
             if self.children[directory].children:
                 self.children[directory].print_asset_list()
 
-    def add_child(self, child:"DirectoryAsset") -> "DirectoryAsset":
+    def add_child(self, child:"DirectoryAsset"=None) -> "DirectoryAsset":
+        # TODO: child=None should be handled differently; i.e. interactively created
         child.parent_directory = self
+
         return self.children.setdefault(child.name, child)
 
     def populate_child_directories(self) -> None:

@@ -9,8 +9,9 @@ class DirectoryNavigator:
     def __init__(self, current_directory:DirectoryAsset) -> None:
         self.main_options = {
                 1: ["Show directory tree", self.show_current_directory_tree],
-                2: ["Populate child directory", self.populate_child_directory]
-                # 3: ["Change directory", self.change_directory]
+                2: ["Populate child directory", self.populate_child_directory],
+                3: ["Add a directory", self.add_child_directory],
+                3: ["Change directory", self.change_directory]
                 }
 
         # Setting the quit option, which should be the last option of main_options
@@ -48,6 +49,22 @@ class DirectoryNavigator:
         print(f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist")
         for (key, option) in self.main_options.items():
             print(f"{key} - {option[0]}")
+
+    def add_child_directory(self) -> None:
+        child_name = input("Please enter the child's name: ")
+        child = DirectoryAsset(name=child_name, parent=self.current_directory, level=self.current_directory.level+2)
+        self.current_directory.add_child(child)
+
+    def change_directory(self) -> None:
+        new_directory_name = input("[+] Please enter the name of the directory to change to: ")
+        try:
+            directory_location:int = [x.name for x in DirectoryAsset.master_list].index(new_directory_name)
+        except ValueError:
+            print(f"[!] {new_directory_name} is not a recognized directory.")
+        else:
+            self.current_directory = DirectoryAsset.master_list[directory_location]
+
+        input("Press ENTER ... ")
 
     def quit_program(self) -> None:
         clear_screen()
