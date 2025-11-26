@@ -1,3 +1,4 @@
+import curses
 import subprocess
 
 from directory_asset import DirectoryAsset
@@ -13,7 +14,7 @@ def _enter_to_continue() -> None:
 
 
 class DirectoryNavigator:
-    def __init__(self, current_directory:DirectoryAsset) -> None:
+    def __init__(self, current_directory:DirectoryAsset, stdscr:"curses.window") -> None:
         """Creates a looping interface for handling DirectoryAsset objects.
 
         When this object is created, a looping menu occurs, which allows direct interaction
@@ -24,6 +25,7 @@ class DirectoryNavigator:
         :type current_directory: DirectoryAsset
         """
         self.main_options = self.create_options_menu()
+        self.stdscr = stdscr
 
         self.current_directory = current_directory
 
@@ -57,14 +59,32 @@ class DirectoryNavigator:
         This loops continuously until the user provides the quite option, or an
         unhandled error occurs.
         """
-        # TODO: Implement input validation.
-        self.show_main_menu()
-        option = int(input("[+] Please enter the option: "))  # must be an int
-        self.main_options.get(option)[1]()  # [1] is the function, so must use () to call the function
+        self.stdscr.clear()
+        current_display_line = self.show_main_menu()
+
+        # The following lines get the users input.
+        input_display = "[+] Please enter your option: "
+        self.stdscr.addstr(current_display_line, 0, input_display)
+        option = self.stdscr.getkey(current_display_line, len(input_display)) # show cursor after input_display
+        option = int(option)
+
+        self.stdscr.refresh()
+
+        # self.main_options.get(option)[1]()  # [1] is the function, so must use () to call the function
         while option != max(self.main_options.keys()):
-            self.show_main_menu()
-            option = int(input("[+] Please enter the option: "))
-            self.main_options[option][1]()
+            # run the function that was requested
+            # self.main_options[option][1]()
+
+            self.stdscr.clear()
+            # reshow main menu
+            current_display_line = self.show_main_menu()
+
+            # The following lines get the users input.
+            input_display = "[+] Please enter your option: "
+            self.stdscr.addstr(current_display_line, 0, input_display)
+            option = self.stdscr.getkey(current_display_line, len(input_display)) # show cursor after input_display
+            option = int(option)
+
 
     def show_current_directory_tree(self) -> None:
         """This method shows the current directory tree.
@@ -79,13 +99,19 @@ class DirectoryNavigator:
 
         input("Press ENTER . . .")
 
-    def show_main_menu(self) -> None:
+    def show_main_menu(self) -> int:
         """Displays the main menu options."""
-        _clear_screen()
+        #_clear_screen()
+        banner = f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist"
+        self.stdscr.addstr(0,0, banner, curses.A_REVERSE)
 
-        print(f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist")
+        current_display_line:int = 1
+
         for (key, option) in self.main_options.items():
-            print(f"{key} - {option[0]}")
+            self.stdscr.addstr(current_display_line, 0, f"{key} - {option[0]}")
+            current_display_line += 1
+
+        return current_display_line
 
     def populate_child_directory(self) -> None:
         """Calling this method evokes the populate_child_directories() for the current_directory attribute.
