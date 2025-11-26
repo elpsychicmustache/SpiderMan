@@ -8,7 +8,7 @@ class DirectoryAsset():
 
         To prevent recursion, a DirectoryAsset should only have one parent node. Any instantiated DirectoryAsset will be added to the
         master_list class variable to prevent duplicate directories from appearing (again, to prevent recursion).
-        If this is the first DirectoryAsset object, it is recommended to start with level=0.
+        If this is the first DirectoryAsset object, it is recommended to start with level=2.
 
         :param name: The directory name.
         :type name: str
@@ -70,7 +70,7 @@ class DirectoryAsset():
         Currently, this will only accept a DirectoryAsset. In future iterations, I plan
         to allow an empty child, and allow the user to interactively add a child directory.
 
-        :param child: The DirectoryAsset to as a child to self.
+        :param child: The DirectoryAsset to as a child to self. Defaults to None.
         :type child: DirectoryAsset
         """
         # TODO: child=None should be handled differently; i.e. interactively created
@@ -105,10 +105,12 @@ class DirectoryAsset():
                 self.children[directory].print_asset_list()
 
     def populate_child_directories(self) -> None:
-        """Running this method allows the user to populate children directores from a direct child.
+        """Running this method allows the user to populate children directores from a directly linked child node.
 
-        This is an interactive method, meaning that when it is called, the user must interact with
-        the prompts.
+        The benefit of this is being able to populate children directories,
+        without having to switch to the child itself.
+
+        This is an interactive method, meaning that when it is called, the user must interact with prompts.
         """
         # TODO: Would it be better to have arguments, and if the arguments don't exist
         # then have the user interactively build it out?
