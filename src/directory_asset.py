@@ -3,6 +3,7 @@ from pathlib import Path
 class DirectoryAsset():
     master_list = []
 
+
     def __init__(self, name:str, level:int, parent:"DirectoryAsset"=None, children:dict[str, "DirectoryAsset"]=None) -> None:
         """Create a DirectoryAsset object, which represents a directory with a possible parent or children nodes.
 
@@ -119,7 +120,7 @@ class DirectoryAsset():
         for directory in self.children.keys():
             asset_list.append(" "*self.level + "- " + directory)
             if self.children[directory].children:
-                asset_list + self.children[directory].get_asset_list()
+                asset_list = asset_list + self.children[directory].get_asset_list()
 
         return asset_list
 
