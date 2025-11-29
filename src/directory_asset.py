@@ -3,6 +3,7 @@ from pathlib import Path
 class DirectoryAsset():
     master_list = []
 
+
     def __init__(self, name:str, level:int, parent:"DirectoryAsset"=None, children:dict[str, "DirectoryAsset"]=None) -> None:
         """Create a DirectoryAsset object, which represents a directory with a possible parent or children nodes.
 
@@ -104,29 +105,38 @@ class DirectoryAsset():
             if self.children[directory].children:
                 self.children[directory].print_asset_list()
 
-    def populate_child_directories(self) -> None:
+    def get_asset_list(self) -> list[str]:
+        """Returns a string list version of print_asset_list
+
+        :returns: A list containing the names of the directory assets.
+        :rtype: list[str]
+        """
+        asset_list = []
+
+        if not self.children:
+            raise IndexError(f"[!] No subdirectories found for {self.name}")
+        if not self.parent:
+            asset_list.append("- " + self.name)
+        for directory in self.children.keys():
+            asset_list.append(" "*self.level + "- " + directory)
+            if self.children[directory].children:
+                asset_list = asset_list + self.children[directory].get_asset_list()
+
+        return asset_list
+
+    def populate_child_directories(self, child_directory_name:str, input_file_name:str) -> None:
         """Running this method allows the user to populate children directores from a directly linked child node.
 
         The benefit of this is being able to populate children directories,
         without having to switch to the child itself.
-
-        This is an interactive method, meaning that when it is called, the user must interact with prompts.
         """
-        # TODO: Would it be better to have arguments, and if the arguments don't exist
-        # then have the user interactively build it out?
-        child_name = input("Please enter the child directory name: ")
 
-        if not self.children.get(child_name):
-            raise KeyError(f"[!] {child_name} is not a valid directory of {self.name}")
-
-        file_input_name = input("Please enter the input file name: ")
-
-        data_path = Path(__file__).resolve().parent.parent / "data" / file_input_name
+        data_path = Path(__file__).resolve().parent.parent / "data" / input_file_name
 
         with open(data_path, "r") as file:
             directories = file.read().strip()
 
-        self.children[child_name].populate_directories(directories)
+        self.children[child_directory_name].populate_directories(directories)
 
     def remove_child() -> None:
         """Remove a child directory.

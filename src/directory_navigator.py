@@ -1,3 +1,4 @@
+import curses
 import subprocess
 
 from directory_asset import DirectoryAsset
@@ -13,7 +14,7 @@ def _enter_to_continue() -> None:
 
 
 class DirectoryNavigator:
-    def __init__(self, current_directory:DirectoryAsset) -> None:
+    def __init__(self, current_directory:DirectoryAsset, stdscr:"curses.window") -> None:
         """Creates a looping interface for handling DirectoryAsset objects.
 
         When this object is created, a looping menu occurs, which allows direct interaction
@@ -25,8 +26,17 @@ class DirectoryNavigator:
         """
         self.main_options = self.create_options_menu()
 
+        # Setting curses parameters
+        self.stdscr = stdscr
+        curses.echo(True)
+        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+        self.GREEN_ALERT = curses.color_pair(1)
+        self.RED_ALERT = curses.color_pair(2)
+
         self.current_directory = current_directory
 
+        # starts an 'infinite' loop
         self.enter_main_loop()
 
     def create_options_menu(self) -> dict[int, tuple]:
@@ -54,17 +64,48 @@ class DirectoryNavigator:
     def enter_main_loop(self):
         """Calling this evokes the main loop for DirectoryNavigator.
 
-        This loops continuously until the user provides the quite option, or an
+        This loops continuously until the user provides the quit option, or an
         unhandled error occurs.
         """
-        # TODO: Implement input validation.
-        self.show_main_menu()
-        option = int(input("[+] Please enter the option: "))  # must be an int
-        self.main_options.get(option)[1]()  # [1] is the function, so must use () to call the function
+        self.stdscr.clear()
+        current_display_line = self.show_main_menu()
+
+        # The following lines get the users input.
+        input_display = "[+] Please enter your option: "
+        self.stdscr.addstr(current_display_line, 0, input_display)
+        option = self.stdscr.getkey(current_display_line, len(input_display)) # show cursor after input_display
+        option = int(option)
+
+        self.stdscr.refresh()
+
+        # self.main_options.get(option)[1]()  # [1] is the function, so must use () to call the function
         while option != max(self.main_options.keys()):
-            self.show_main_menu()
-            option = int(input("[+] Please enter the option: "))
+            # run the function that was requested
             self.main_options[option][1]()
+
+            self.stdscr.clear()
+            # reshow main menu
+            current_display_line = self.show_main_menu()
+
+            # The following lines get the users input.
+            input_display = "[+] Please enter your option: "
+            self.stdscr.addstr(current_display_line, 0, input_display)
+            option = self.stdscr.getkey(current_display_line, len(input_display)) # show cursor after input_display
+            option = int(option)
+
+    def show_main_menu(self) -> int:
+        """Displays the main menu options."""
+        #_clear_screen()
+        banner = f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist"
+        self.stdscr.addstr(0,0, banner, curses.A_REVERSE)
+
+        current_display_line:int = 1
+
+        for (key, option) in self.main_options.items():
+            self.stdscr.addstr(current_display_line, 0, f"{key} - {option[0]}")
+            current_display_line += 1
+
+        return current_display_line
 
     def show_current_directory_tree(self) -> None:
         """This method shows the current directory tree.
@@ -73,28 +114,70 @@ class DirectoryNavigator:
         This means that any parent directories are ignored. To show all directories,
         it is recommended to be in the root directory.
         """
-        _clear_screen()
+        self.stdscr.clear()
 
-        self.current_directory.print_asset_list()
+        directory_list = self.current_directory.get_asset_list()
 
-        input("Press ENTER . . .")
+        last_available_line = curses.LINES - 1
 
-    def show_main_menu(self) -> None:
-        """Displays the main menu options."""
-        _clear_screen()
+        # The following lines print the directories to the screen, one window at a time.
+        current_print_line = 0
+        for index in range(len(directory_list)):
+            if current_print_line < last_available_line-1:  # keeping last_available_line for status
+                self.stdscr.addstr(current_print_line, 0, directory_list[index])
+                current_print_line += 1
+            else:
+                # Printing the last directory that can be shown here; otherwise, we lose 1 directory every refresh
+                # due to the else statement still incrementing index
+                self.stdscr.addstr(current_print_line, 0, directory_list[index])
+                self.stdscr.addstr(last_available_line, 0, 
+                                   f"{index + 1} out of {len(directory_list)} directories printed. Print any key to continue.", 
+                                   curses.A_REVERSE
+                                   )
+                self.stdscr.refresh()
+                current_print_line = 0
+                self.stdscr.getch()
+                self.stdscr.clear()
 
-        print(f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist")
-        for (key, option) in self.main_options.items():
-            print(f"{key} - {option[0]}")
+        self.stdscr.addstr(last_available_line, 0,
+                           f"All directories printed. Press any key to exit.",
+                           curses.A_REVERSE
+                           )
+
+        self.stdscr.refresh()
+        self.stdscr.getch()
 
     def populate_child_directory(self) -> None:
         """Calling this method evokes the populate_child_directories() for the current_directory attribute.
 
-        Actual interaction occurs in the populate_child_directories() method.
+        The method should walk the user through creation of the child directory, based on the directory name and the input file's name.
+
+        File path and name validation is inside directory_asset.
         """
-        _clear_screen()
-        # TODO: Move functionality from populate_child_directories to this method.
-        self.current_directory.populate_child_directories()
+        self.stdscr.clear()
+
+        input_banner = "[+] Please enter the name of the child directory: "
+        self.stdscr.addstr(0, 0, input_banner)
+        child_name:str = self.stdscr.getstr(0, len(input_banner)).decode()
+
+        if not self.current_directory.children.get(child_name):
+            self.stdscr.clear()
+            self.stdscr.addstr(0, 0, f"[!] {child_name} is not a valid child directory. Nothing happened ...", self.RED_ALERT)
+            # TODO: Ask if user wants to create the directory. Before doing so, the directory needs to be checked against the master list.
+            self.stdscr.getch(1, 0)
+            return  # end this function
+
+        file_input_banner = "[+] Please enter the name of the file from which to populate the directory: "
+        self.stdscr.addstr(1, 0, file_input_banner)
+        file_name:str = self.stdscr.getstr(1, len(file_input_banner)).decode()
+
+        self.current_directory.populate_child_directories(child_name, file_name)
+
+        self.stdscr.clear()
+        self.stdscr.addstr(0, 0, f"[+] {child_name} directories have been populated!", self.GREEN_ALERT)
+        closing_message = "Press ENTER ..."
+        self.stdscr.addstr(1, 0, closing_message)
+        self.stdscr.getch(1, len(closing_message))
 
     def add_child_directory(self) -> None:
         """Creates a single child directory to current_directory.
@@ -102,32 +185,51 @@ class DirectoryNavigator:
         This calls the add_child() method for the current_directory object.
         Interaction and child object creation is implemented in this function.
         """
-        child_name = input("Please enter the child's name: ")
+        self.stdscr.clear()
+        banner = f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist"
+        self.stdscr.addstr(0,0, banner, curses.A_REVERSE)
+
+        input_message = "Please enter the child's name: "
+        self.stdscr.addstr(1, 0, input_message)
+        child_name = self.stdscr.getstr(1, len(input_message)).decode()
         child = DirectoryAsset(name=child_name, parent=self.current_directory, level=self.current_directory.level+2)
         self.current_directory.add_child(child)
+
+        self.stdscr.addstr(2, 0, f"[+] {child_name} has been added to {self.current_directory.name}", self.GREEN_ALERT)
+        closing_message = "Press ENTER ..."
+        self.stdscr.addstr(3, 0, closing_message)
+        self.stdscr.getch(3, len(closing_message))
 
     def change_directory(self) -> None:
         """Changes the current_directory attribute.
 
         Nothing will happen if the directory being called does not exist in the master_list of DirectoryAsset.
         """
-        new_directory_name = input("[+] Please enter the name of the directory to change to: ")
+        self.stdscr.clear()
+        new_directory_prompt = "[+] Please enter the name of the directory to change to: "
+        self.stdscr.addstr(0, 0, new_directory_prompt)
+        new_directory_name = self.stdscr.getstr(0, len(new_directory_prompt)).decode()
+
         try:
             directory_location:int = [x.name for x in DirectoryAsset.master_list].index(new_directory_name)
         except ValueError:
-            print(f"[!] '{new_directory_name}' is not a recognized directory.")
+            self.stdscr.clear()
+            self.stdscr.addstr(0, 0, f"[!] '{new_directory_name}' is not a recognized directory. Nothing happened.", self.RED_ALERT)
         else:
             self.current_directory = DirectoryAsset.master_list[directory_location]
-            print(f"Successfully changed to '{new_directory_name}'.")
+            self.stdscr.clear()
+            self.stdscr.addstr(0, 0, f"[+] Successfully changed to '{new_directory_name}'.", self.GREEN_ALERT)
 
-        input("Press ENTER ... ")
+        closing_message = "Press ENTER ..."
+        self.stdscr.addstr(1, 0, closing_message)
+        self.stdscr.getch(1, len(closing_message))
 
     def quit_program(self) -> None:
         """Clears the screen.
 
-        This doesn't actually quit the program, but simply calls the _clear_screen() function.
+        This doesn't actually quit the program, but simply calls the curses clear() function.
         The quitting is handled by the enter_main_loop() method. This method is being kept in 
         case future clean up is needed before actually quitting the program. It is also required
         to follow the main_menu attribute convention by having a function to call. None causes an error.
         """
-        _clear_screen()
+        self.stdscr.clear()

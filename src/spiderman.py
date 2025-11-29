@@ -1,4 +1,5 @@
 import argparse
+import curses
 import textwrap
 
 from pathlib import Path
@@ -6,10 +7,8 @@ from pathlib import Path
 from directory_asset import DirectoryAsset
 from directory_navigator import DirectoryNavigator
 
-# TODO: Implement curses.
 
-
-def main() -> None:
+def main(stdscr) -> None:
     """Running this starts the program.
 
     It grabs the input file, which should be '../data/input.txt' if default option for --input_file is used.
@@ -37,8 +36,11 @@ def main() -> None:
     # Populating the root directory.
     main_directory_asset = instantiate_directory_object(parent_directory_name=root_directory_name, directory_list=directories)
 
+    stdscr.addstr(0,0, f"{type(stdscr)}")
+    stdscr.refresh()
+
     # Entering the main loop.
-    navigator = DirectoryNavigator(main_directory_asset)
+    navigator = DirectoryNavigator(main_directory_asset, stdscr)
 
 
 def get_argparse() -> argparse.Namespace:
@@ -109,4 +111,4 @@ def instantiate_directory_object(parent_directory_name, directory_list) -> Direc
 
 
 if __name__ == "__main__":
-    main()
+    curses.wrapper(main)
