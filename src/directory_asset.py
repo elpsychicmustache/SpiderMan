@@ -129,8 +129,6 @@ class DirectoryAsset():
 
         The benefit of this is being able to populate children directories,
         without having to switch to the child itself.
-
-        This is an interactive method, meaning that when it is called, the user must interact with prompts.
         """
 
         data_path = Path(__file__).resolve().parent.parent / "data" / input_file_name

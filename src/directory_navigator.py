@@ -34,9 +34,9 @@ class DirectoryNavigator:
         self.GREEN_ALERT = curses.color_pair(1)
         self.RED_ALERT = curses.color_pair(2)
 
-
         self.current_directory = current_directory
 
+        # starts an 'infinite' loop
         self.enter_main_loop()
 
     def create_options_menu(self) -> dict[int, tuple]:
@@ -64,7 +64,7 @@ class DirectoryNavigator:
     def enter_main_loop(self):
         """Calling this evokes the main loop for DirectoryNavigator.
 
-        This loops continuously until the user provides the quite option, or an
+        This loops continuously until the user provides the quit option, or an
         unhandled error occurs.
         """
         self.stdscr.clear()
@@ -93,6 +93,19 @@ class DirectoryNavigator:
             option = self.stdscr.getkey(current_display_line, len(input_display)) # show cursor after input_display
             option = int(option)
 
+    def show_main_menu(self) -> int:
+        """Displays the main menu options."""
+        #_clear_screen()
+        banner = f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist"
+        self.stdscr.addstr(0,0, banner, curses.A_REVERSE)
+
+        current_display_line:int = 1
+
+        for (key, option) in self.main_options.items():
+            self.stdscr.addstr(current_display_line, 0, f"{key} - {option[0]}")
+            current_display_line += 1
+
+        return current_display_line
 
     def show_current_directory_tree(self) -> None:
         """This method shows the current directory tree.
@@ -134,24 +147,12 @@ class DirectoryNavigator:
         self.stdscr.refresh()
         self.stdscr.getch()
 
-    def show_main_menu(self) -> int:
-        """Displays the main menu options."""
-        #_clear_screen()
-        banner = f"[+] Currently in '{self.current_directory.name}': {len(DirectoryAsset.master_list)} directories exist"
-        self.stdscr.addstr(0,0, banner, curses.A_REVERSE)
-
-        current_display_line:int = 1
-
-        for (key, option) in self.main_options.items():
-            self.stdscr.addstr(current_display_line, 0, f"{key} - {option[0]}")
-            current_display_line += 1
-
-        return current_display_line
-
     def populate_child_directory(self) -> None:
         """Calling this method evokes the populate_child_directories() for the current_directory attribute.
 
-        Actual interaction occurs in the populate_child_directories() method.
+        The method should walk the user through creation of the child directory, based on the directory name and the input file's name.
+
+        File path and name validation is inside directory_asset.
         """
         self.stdscr.clear()
 
@@ -226,7 +227,7 @@ class DirectoryNavigator:
     def quit_program(self) -> None:
         """Clears the screen.
 
-        This doesn't actually quit the program, but simply calls the _clear_screen() function.
+        This doesn't actually quit the program, but simply calls the curses clear() function.
         The quitting is handled by the enter_main_loop() method. This method is being kept in 
         case future clean up is needed before actually quitting the program. It is also required
         to follow the main_menu attribute convention by having a function to call. None causes an error.
