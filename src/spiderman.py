@@ -123,4 +123,8 @@ def instantiate_directory_object(parent_directory_name, directory_list) -> Direc
 
 
 if __name__ == "__main__":
+    # Not super efficient, but calling args before curses is called.
+    # This way, help can be ran before curses takes over stdout.
+    # Args will also be called inside of main.
+    args = get_argparse()
     curses.wrapper(main)
