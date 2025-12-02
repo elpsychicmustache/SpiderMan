@@ -37,6 +37,7 @@ class DirectoryAsset():
         :param directory_string_list: The results from walkman.js as a text file.
         :type directory_string_list: str like list
         """
+        # Removing specific characters from directory_string_list so that it can be parsed correctly.
         directories = set(
                 directory_string_list
                 .replace("[", "")
@@ -65,16 +66,12 @@ class DirectoryAsset():
             child_directory = DirectoryAsset(directory, level=self.level+2, parent=self)
             self.add_child(child_directory)  # this creates the dictionary entry for children
 
-    def add_child(self, child:"DirectoryAsset"=None) -> "DirectoryAsset":
+    def add_child(self, child:"DirectoryAsset"=None) -> None:
         """Add a single child to self.
-
-        Currently, this will only accept a DirectoryAsset. In future iterations, I plan
-        to allow an empty child, and allow the user to interactively add a child directory.
 
         :param child: The DirectoryAsset to as a child to self. Defaults to None.
         :type child: DirectoryAsset
         """
-        # TODO: child=None should be handled differently; i.e. interactively created
         child.parent_directory = self
 
         self.children.setdefault(child.name, child)  # adding child as directory
@@ -85,10 +82,10 @@ class DirectoryAsset():
         self.children = dict(sorted(self.children.items()))
 
     def get_asset_list_string(self) -> str:
-        """Print the directory tree from the perspective of self.
+        """Return the directory tree as a string from the perspective of self.
 
-        I am currently researching how to do curses. Hence, future iteration should probably
-        return this as a string instead of printing directly to stdout.
+        :returns: The directory tree as a string.
+        :rtype: str
         """
 
         # The following two lines are needed to prevent double printing of directory names
@@ -115,7 +112,7 @@ class DirectoryAsset():
         return return_string
 
     def get_asset_list(self) -> list[str]:
-        """Returns a string list version of print_asset_list
+        """Returns a list version of get_asset_list_string()
 
         :returns: A list containing the names of the directory assets.
         :rtype: list[str]
@@ -138,6 +135,11 @@ class DirectoryAsset():
 
         The benefit of this is being able to populate children directories,
         without having to switch to the child itself.
+
+        :param child_directory_name: The name of the child directory.
+        :type child_directory_name: str
+        :param input_file_name: The name of the input file in ../data/
+        :type input_file_name: str
         """
 
         data_path = Path(__file__).resolve().parent.parent / "data" / input_file_name
@@ -155,6 +157,13 @@ class DirectoryAsset():
         pass
 
     def create_output_file(self, output_file_name:str="output.txt") -> None:
+        """Create an output file of the directory tree.
+
+        Currently, this saves the data as the string generated from get_asset_list_string().
+
+        :param output_file_name: The name of the file to save to. DEFAULTS to output.txt
+        :type output_file_name: str
+        """
         data_path = Path(__file__).parent.parent.resolve()
         data_path = data_path / "data" / output_file_name
         asset_list_string = self.get_asset_list_string()
