@@ -88,6 +88,7 @@ class DirectoryNavigator:
                 ("Add a directory", self.add_child_directory),
                 ("Change directory", self.change_directory),
                 ("Save directory tree", self.save_directory),
+                ("Remove a child", self.remove_child_directory),
                 # Add any options above "Quit" - that way, quit is last
                 ("Quit", self.quit_program)
                 ]
@@ -306,6 +307,16 @@ class DirectoryNavigator:
 
         col_length = self.show_banner(y=4, x=0)
         self.stdscr.getch(4, col_length)
+
+    def remove_child_directory(self) -> None:
+        self.stdscr.clear()
+        self.show_banner()
+
+        input_banner = "[+] Please enter the name of the child directory to remove: "
+        col_length = self.show_banner(1, 0, input_banner, reverse=False)
+        child_name = self.stdscr.getstr(1, col_length).decode()
+
+        self.current_directory.remove_child(child_name)
 
     def quit_program(self) -> None:
         """Clears the screen.

@@ -35,7 +35,7 @@ class DirectoryAsset():
         self.name = name
         self.level = level
         self.parent = parent
-        self.children = children or {}
+        self.children = children or {}  # children should be like so {child.name, object}
 
         DirectoryAsset.master_list.append(self)  # keeping track of a master list to prevent recursive entries
 
@@ -175,13 +175,13 @@ class DirectoryAsset():
         """
         # Figure out if child exists.
         try:
-            self.children["child_name"]
+            self.children[child_name]
         except KeyError:
             raise ValueError(f"[!] {child_name} is not a valid child directory.")
             return  # end this function call
 
         # Remove the child from the children list.
-        directory_object = self.children.pop("child_name")
+        directory_object = self.children.pop(child_name)
         # Remove the child from the master list.
         DirectoryAsset.master_list.remove(directory_object)
         # Attempt to delete the child.
