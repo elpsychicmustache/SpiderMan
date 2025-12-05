@@ -24,7 +24,6 @@ def main(stdscr) -> None:
     :stdscr type: curses.window
     """
     args:argparse.Namespace = get_argparse()
-    input_file:str = args.input_file
     root_directory_name:str = args.root_directory
     output_file:str = args.output_file
 
@@ -32,17 +31,21 @@ def main(stdscr) -> None:
     directories:str = None
 
     # if input_file was provided, populate directories with the data
-    if input_file:
-        input_file = project_root / "data" / input_file
-
+    if args.input_file:
+        input_file:"PosixPath" = project_root / "data" / args.input_file
         with open(input_file, "r") as file:
-            directories = file.read().strip()
+            directories:str = file.read().strip()
+    # else if input_tree was provided, grab the tree data
+    elif args.input_tree:
+        input_file:"PosixPath" = project_root / "data" / args.input_tree
+        with open(input_file, "r") as file:
+            directories:str = file.read().strip()
 
     # Populating the root directory.
-    main_directory_asset = instantiate_directory_object(parent_directory_name=root_directory_name, directory_list=directories)
+    main_directory_asset:DirectoryAsset = instantiate_directory_object(parent_directory_name=root_directory_name, directory_list=directories)
 
     # if output_file was provided, then generate outputfile. Otherwise run main loop.
-    if output_file:
+    if args.output_file:
         main_directory_asset.create_output_file(output_file_name=output_file)
     else:
         navigator = DirectoryNavigator(main_directory_asset, stdscr)
@@ -72,8 +75,13 @@ def get_argparse() -> argparse.Namespace:
                                      )
 
     parser.add_argument("-i", "--input_file", 
-                        help="The input file when building the root directory. DEFAULTS to input.txt", 
-                        default="input.txt"
+                        help="The input file when building the root directory.", 
+                        default=None
+                        )
+
+    parser.add_argument("-I", "--input_tree",
+                        help="Use this option to build the tree from the output file of a previously created tree. Cannot be used with -i.",
+                        default=None
                         )
 
     parser.add_argument("-r", "--root_directory",
@@ -84,10 +92,6 @@ def get_argparse() -> argparse.Namespace:
     parser.add_argument("-o", "--output_file",
                         help="The output file for the tree. If used, the program does not run interactive directory building.",
                         default=None)
-
-    parser.add_argument("-e", "--empty_directory",
-                        help="Start the program with an empty directory. Cannot be used with -o or -i (they will be ignored).",
-                        action="store_true")
 
     args = parser.parse_args()
 
@@ -103,9 +107,8 @@ def check_args_combinations(args:argparse.Namespace) -> None:
     :param args: The arguments grabbed from argparse.
     :type args: argparse.Namespace
     """
-    if args.empty_directory:
-        args.input_file = None
-        args.output_file = None
+    if args.input_tree and args.input_tree:
+        raise ValueError("[!] Cannot use --input_tree [-I] and --input_file [-i] at the same time.")
 
 
 def get_parent_path() -> "PosixPath":
@@ -144,5 +147,4 @@ if __name__ == "__main__":
     # This way, help can be ran before curses takes over stdout.
     # Args will also be called inside of main.
     args = get_argparse()
-
     curses.wrapper(main)
