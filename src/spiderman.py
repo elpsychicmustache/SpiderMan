@@ -44,6 +44,14 @@ def main(stdscr) -> None:
         # populate the first directory
         first_key = next(iter(parent_child_dict))
         main_directory_asset:DirectoryAsset = instantiate_directory_object(parent_directory_name=first_key, directory_list="\n".join(parent_child_dict[first_key]))
+        del parent_child_dict[first_key]
+
+        # populate the rest of the dictionaries
+        for parent, children in parent_child_dict.items():
+            directory_names:list[str] = [directory.name for directory in DirectoryAsset.master_list]
+            parent_index:int = directory_names.index(parent)
+            parent_directory:DirectoryAsset = DirectoryAsset.master_list[parent_index]
+            parent_directory.populate_directories("\n".join(children))
 
     # Else, populate the root directory.
     else:
@@ -57,6 +65,20 @@ def main(stdscr) -> None:
 
 
 def parse_directory_list(directory_list:list[str]) -> dict[str, list[str]]:
+    """Parse the current output format in a way that can rebuild it as DirectoryAsset objects.
+
+    God be with ye if you must update this. It took a while to figure out how to make this work.
+    Either way, provide it with a list (newline separated) from a DirectoryAsset output file.
+
+    This then figures out the hierarchies and saves them so the directory file can be worked on
+    after quitting the program. There is probably a much easier way of doing this, especially
+    if we can just create DirectoryAsset objects right in this function.
+
+    :param directory_list: The output file from directory_asset, but split by newlines.
+    :type directory_list: list[str]
+    :returns: A parent directory (as a string), with a list of children directories (as strings)
+    :rtype: dict[str, list[str]]
+    """
     # dictionary should be in style {parent: [children]}
     # directory_pointer should be in style {int, parent}
     # The directory_pointer points to what the parent is for a given level

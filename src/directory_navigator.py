@@ -88,8 +88,8 @@ class DirectoryNavigator:
                 ("Populate child directory", self.populate_child_directory),
                 ("Add a child directory", self.add_child_directory),
                 ("Change to a directory", self.change_directory),
-                ("Save directory tree", self.save_directory),
                 ("Remove a child directory", self.remove_child_directory),
+                ("Save directory tree", self.save_directory),
                 # Add any options above "Quit" - that way, quit is last
                 ("Quit", self.quit_program)
                 ]
