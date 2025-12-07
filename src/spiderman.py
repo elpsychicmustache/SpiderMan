@@ -30,25 +30,90 @@ def main(stdscr) -> None:
     project_root:"PosixPath" = get_parent_path()
     directories:str = None
 
-    # if input_file was provided, populate directories with the data
-    if args.input_file:
-        input_file:"PosixPath" = project_root / "data" / args.input_file
-        with open(input_file, "r") as file:
-            directories:str = file.read().strip()
-    # else if input_tree was provided, grab the tree data
-    elif args.input_tree:
-        input_file:"PosixPath" = project_root / "data" / args.input_tree
+    # if input_file or input_tree was provided, populate directories with the data
+    if args.input_file or args.input_tree:
+        input_file:"PosixPath" = project_root / "data" / (args.input_file if args.input_file else args.input_tree)
         with open(input_file, "r") as file:
             directories:str = file.read().strip()
 
-    # Populating the root directory.
-    main_directory_asset:DirectoryAsset = instantiate_directory_object(parent_directory_name=root_directory_name, directory_list=directories)
+    # If input_tree was provided, then perform the appropriate parsing on directories
+    # because directories won't work as is (because it is not None and not in the format from walkman.js).
+    if args.input_tree:
+        directory_list:list[str] = directories.split("\n")
+        parent_child_dict = parse_directory_list(directory_list)
+        # populate the first directory
+        first_key = next(iter(parent_child_dict))
+        main_directory_asset:DirectoryAsset = instantiate_directory_object(parent_directory_name=first_key, directory_list="\n".join(parent_child_dict[first_key]))
+
+    # Else, populate the root directory.
+    else:
+        main_directory_asset:DirectoryAsset = instantiate_directory_object(parent_directory_name=root_directory_name, directory_list=directories)
 
     # if output_file was provided, then generate outputfile. Otherwise run main loop.
     if args.output_file:
         main_directory_asset.create_output_file(output_file_name=output_file)
     else:
         navigator = DirectoryNavigator(main_directory_asset, stdscr)
+
+
+def parse_directory_list(directory_list:list[str]) -> dict[str, list[str]]:
+    # dictionary should be in style {parent: [children]}
+    # directory_pointer should be in style {int, parent}
+    # The directory_pointer points to what the parent is for a given level
+    parent_child_dict:dict[str, list[str]] = {}
+    directory_pointer:dict[int, str] = {}
+
+    previous_level:int = 0
+    current_level:int = 0
+
+    # Sorry for the comment offense in the following lines, but this took a while to figure out
+    for index, directory in enumerate(directory_list):
+        # find the current parent-child hierarchy by the location of "-"
+        # then, remove the "-" and strip all whitespace to get only the directory name
+        current_level = directory.find("-")
+        directory = directory.replace("-", "", 1).strip()
+
+        # if parent_child_dict does not exist, create it (should only happen first loop)
+        if not parent_child_dict:
+            parent_child_dict[directory] = []
+            directory_pointer[current_level] = directory
+
+        # If we have entered a new hierarchy
+        elif current_level > previous_level:
+            # check if dictionary previous_level exists
+            parent:str = directory_pointer.get(previous_level)
+            # if so, then populate parent_child_dict as child to parent
+            # this prevents duplicate parent entries
+            if parent_child_dict.get(parent):
+                parent_child_dict[parent].append(directory)
+            # else, create directory_pointer entry with previous_level
+            else:
+                # get previous index's cleaned directory name, and create directory_pointer
+                previous_directory:str = directory_list[index-1].replace("-", "", 1).strip()
+                directory_pointer[previous_level] = previous_directory
+                # then create parent_child_dict and append to that
+                parent_child_dict[previous_directory] = []
+                parent_child_dict[previous_directory].append(directory)
+        # If current_level is same as previous_level, populate the highest level from directory_pointer
+        # since we are at the same hierarchy
+        elif current_level == previous_level:
+            max_key = max(directory_pointer, key=directory_pointer.get)
+            parent:str = directory_pointer.get(max_key)
+            parent_child_dict[parent].append(directory)
+        # If current_level is less than previous_level, we have gone back a hierarchy level
+        # which means we need to delete the highest level from directory_pointer,
+        # grab the new highest level (after deleting) which allows us to
+        # populate the directory from our previous hiearchy
+        elif current_level < previous_level:
+            current_max_key = max(directory_pointer, key=directory_pointer.get)
+            del directory_pointer[current_max_key]
+            new_max_key = max(directory_pointer, key=directory_pointer.get)
+            parent:str = directory_pointer[new_max_key]
+            parent_child_dict[parent].append(directory)
+
+        previous_level = current_level
+
+    return parent_child_dict
 
 
 def get_argparse() -> argparse.Namespace:
@@ -107,7 +172,7 @@ def check_args_combinations(args:argparse.Namespace) -> None:
     :param args: The arguments grabbed from argparse.
     :type args: argparse.Namespace
     """
-    if args.input_tree and args.input_tree:
+    if args.input_tree and args.input_file:
         raise ValueError("[!] Cannot use --input_tree [-I] and --input_file [-i] at the same time.")
 
 
