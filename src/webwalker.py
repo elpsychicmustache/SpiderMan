@@ -23,30 +23,41 @@ def main(stdscr) -> None:
     :param stdscr: The curses instantiation from curses.wrapper()
     :stdscr type: curses.window
     """
+    # Grabbing parameters from argparse
     args:argparse.Namespace = get_argparse()
     root_directory_name:str = args.root_directory
     output_file:str = args.output_file
     DirectoryAsset.hostname = args.hostname
-
+    # Stating some additional variables
     project_root:"PosixPath" = get_parent_path()
     directories:str = None
+    valid_file_found = True  # controls functionality
+
+    # clearing screen
+    stdscr.clear()
 
     # if input_file or input_tree was provided, populate directories with the data
-    if args.input_file or args.input_tree:
-        input_file:"PosixPath" = project_root / "data" / (args.input_file if args.input_file else args.input_tree)
-        with open(input_file, "r") as file:
-            directories:str = file.read().strip()
+    try:
+        if args.input_file or args.input_tree:
+            input_file:"PosixPath" = project_root / "data" / (args.input_file if args.input_file else args.input_tree)
+            with open(input_file, "r") as file:
+                directories:str = file.read().strip()
+    except FileNotFoundError:
+        stdscr.addstr(0, 0, f"[!] {input_file} was not found. Populating an empty directory.")
+        stdscr.addstr(1, 0, "Press ENTER ...")
+        stdscr.getch()
+        valid_file_found = False
 
-    # If input_tree was provided, then perform the appropriate parsing on directories
+    # If input_tree was provided and an error did not occur with input file, then perform the appropriate parsing on directories
     # because directories won't work as is (because it is not None and not in the format from walkman.js).
-    if args.input_tree:
+    if args.input_tree and valid_file_found:
         directory_list:list[str] = directories.split("\n")
         main_directory_asset:DirectoryAsset = parse_directory_list(directory_list)
     # Else, populate the root directory.
     else:
         main_directory_asset:DirectoryAsset = instantiate_directory_object(parent_directory_name=root_directory_name, directory_list=directories)
 
-    # if output_file was provided, then generate outputfile. Otherwise run main loop.
+    # if output_file was provided, then generate outputfile (unless error occured). Otherwise run main loop.
     if args.output_file:
         main_directory_asset.create_output_file(output_file_name=output_file)
     else:
