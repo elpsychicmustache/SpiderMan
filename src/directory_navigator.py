@@ -198,8 +198,14 @@ class DirectoryNavigator:
         col_length = self.show_banner(1, 0, input_banner, reverse=False)
         file_name:str = self.stdscr.getstr(1, col_length).decode()
 
-        input_file = get_datafile(file_name)  # function from directory_asset
-        self.current_directory.populate_directories(input_file)
+        try:
+            input_file = get_datafile(file_name)  # function from directory_asset
+        except FileNotFoundError:
+            self.stdscr.addstr(2, 0, f"[!] {file_name} is not a valid file. Nothing happened.", self.RED_ALERT)
+            col_length = self.show_banner(3, 0)
+            self.stdscr.getch(3, col_length)
+        else:
+            self.current_directory.populate_directories(input_file)
 
     def populate_child_directory(self) -> None:
         """Calling this method evokes the populate_child_directories() for the current_directory attribute.
