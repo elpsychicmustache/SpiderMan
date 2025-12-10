@@ -240,3 +240,24 @@ class DirectoryAsset():
         asset_list_string = self.get_asset_list_string()
 
         data_path.write_text(asset_list_string)
+
+    def __string__(self) -> str:
+        return_string = ""
+        return_string += f"Name: {self.name}\n"
+        return_string += f"Parent: {self.parent.name}\n"
+        return_string += f"Number of children: {len(self.children)}\n"
+
+        if self.scheme:
+            return_string += f"\nScheme: {self.scheme}"
+        if self.netloc:
+            return_string += f"\nNetloc: {self.netloc}"
+        if self.path:
+            return_string += f"\nPath: {self.path}"
+        if self.params:
+            return_string += f"\nParams: {self.params}"
+        if self.query:
+            return_string += f"\nQuery: {self.query}"
+        if self.fragment:
+            return_string += f"\nFragment: {self.fragment}"
+
+        return return_string
