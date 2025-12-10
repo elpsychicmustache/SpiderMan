@@ -241,10 +241,11 @@ class DirectoryAsset():
 
         data_path.write_text(asset_list_string)
 
-    def __string__(self) -> str:
+    def get_asset_details(self) -> str:
         return_string = ""
         return_string += f"Name: {self.name}\n"
-        return_string += f"Parent: {self.parent.name}\n"
+        if self.parent:
+            return_string += f"Parent: {self.parent.name}\n"
         return_string += f"Number of children: {len(self.children)}\n"
 
         if self.scheme:

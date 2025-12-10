@@ -337,8 +337,20 @@ class DirectoryNavigator:
 
     def show_asset_details(self) -> None:
         """Shows current_directory's object details."""
-        
-        pass
+        self.stdscr.clear()
+        asset_details = self.current_directory.get_asset_details().strip()
+
+        current_line:int = 0
+        for detail in asset_details.split("\n"):
+            if current_line == 0:
+                self.stdscr.addstr(current_line, 0, detail.strip(), curses.A_REVERSE)
+            else:
+                self.stdscr.addstr(current_line, 0, detail.strip())
+            current_line += 1
+
+        col_length = self.show_banner(current_line, 0)
+        self.stdscr.refresh()
+        self.stdscr.getch(current_line, col_length)
 
     def quit_program(self) -> None:
         """Clears the screen.
