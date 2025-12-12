@@ -85,7 +85,7 @@ class DirectoryNavigator:
                 ("Quit", self.quit_program)
                 ]
 
-        return {option_number: option_tuple for option_number, option_tuple in enumerate(options, start=1)}
+        return {option_number: option_tuple for option_number, option_tuple in enumerate(options, start=0)}
 
     def enter_main_loop(self):
         """Calling this evokes the main loop for DirectoryNavigator.
@@ -93,37 +93,61 @@ class DirectoryNavigator:
         This loops continuously until the user provides the quit option, or an
         unhandled error occurs.
         """
+
+        # Show main menu with current option selected
+        current_line:int = 0
+        min_option:int = 0
+        max_option:int = max(self.main_options.keys())
+        # If user presses UP_ARROW/K then move up menu (reshow menu)
+        # If user pressed DOWN_ARROW/J then move down menu (reshow menu)
+        # If user presses ENTER/Space then populate option with that
+
         option:int = None
 
         while option != max(self.main_options.keys()):
             # run the function that was requested, unless an error occured, then do nothing.
             try:
+                curses.curs_set(1)
                 self.main_options[option][1]()
+                option = None  # set option back to None to prevent infinite loop of running option
             except KeyError:
                 pass
 
+            curses.curs_set(0)
+
             self.stdscr.clear()
             # reshow main menu
-            current_display_line = self.show_main_menu()
+            current_display_line = self.show_main_menu(current_line)
 
-            # The following lines get the users input.
-            input_display = "[+] Please enter your option: "
-            self.stdscr.addstr(current_display_line, 0, input_display)
-            # try to get the user's requested option. If an invalid input was provided, do nothing.
-            try:
-                option = self.stdscr.getkey(current_display_line, len(input_display)) # show cursor after input_display
-                option = int(option)
-            except ValueError:
-                pass
+            key = self.stdscr.getkey()
 
-    def show_main_menu(self) -> int:
+            if key in ["j", "KEY_DOWN"] and current_line < max_option:
+                current_line += 1
+            elif key in ["k", "KEY_UP"] and current_line > min_option:
+                current_line -= 1
+            elif key in ["l", "KEY_ENTER"]:
+                option = current_line
+            elif key in ["q"]:
+                option = max_option  # max_option should always be quit
+
+
+    def show_main_menu(self, selected_line:int=0) -> int:
         """Displays the main menu options."""
         self.show_banner()
 
+        # finding the midpoint of the screen, so that options can be printed in the middle
+        longest_option = len(max([option[0] for option in self.main_options.values()], key=len))
+        mid_height = (curses.LINES - len(self.main_options)) // 2
+        mid_cols = (curses.COLS - longest_option) // 2
+
+        # keeps track of the offset from mid_height to display each item
         current_display_line:int = 1
 
         for (key, option) in self.main_options.items():
-            self.stdscr.addstr(current_display_line, 0, f"{key} - {option[0]}")
+            if selected_line == current_display_line - 1:
+                self.stdscr.addstr(mid_height + current_display_line, mid_cols, f"{option[0]}", curses.A_REVERSE)
+            else:
+                self.stdscr.addstr(mid_height + current_display_line, mid_cols, f"{option[0]}")
             current_display_line += 1
 
         return current_display_line
