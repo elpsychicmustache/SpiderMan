@@ -114,7 +114,7 @@ class DirectoryNavigator:
             # reshow main menu
             window_y, window_x, window_end_y, window_end_x = self.show_main_menu(current_line)
 
-            message = "WebWalker"
+            message = " WebWalker "
             self.stdscr.addstr(window_y, (curses.COLS - len(message)) // 2, message, curses.A_BOLD)
             if len(DirectoryAsset.master_list) == 1:
                 message = f"You are in '{self.current_directory.name}' directory. 1 directory exists."
@@ -174,13 +174,15 @@ class DirectoryNavigator:
         it is recommended to be in the root directory.
         """
         self.stdscr.clear()
+        curses.curs_set(0)
 
         # This block of code is needed to handle directories with no children.
         try:
-            directory_list:list = (
-                    self.current_directory.get_asset_list_string()
+            #directory_list:list = (
+            directory_list:str = (
+                    self.current_directory.get_asset_list_string()  # this function throws the error
                     .rstrip()
-                    .split("\n")
+                    #.split("\n")
                     )
         except IndexError as e:
             self.stdscr.addstr(0, 0, str(e), self.RED_ALERT)
@@ -189,10 +191,36 @@ class DirectoryNavigator:
             self.stdscr.getch(1, len(exit_banner))
             return  # exit this function
 
+        # preparing pad
+        number_directories:int = len(directory_list.split("\n"))
+        longest_option:int = len(max(directory_list.split("\n"), key=len))
+        treepad = curses.newpad(number_directories+1, longest_option+1)  # removing the +1 causes an error
+
         # Determines how many directory lines can be shown at once.
-        last_available_line = curses.LINES - 1
+        max_line = curses.LINES - 1
+        max_col = curses.COLS - 1
+
+        treepad.addstr(0, 0, directory_list)
+        shown_lines:int = 0
+        while shown_lines <= number_directories:
+            self.stdscr.addstr(0, 0, f"Directory tree for {self.current_directory.name}", curses.A_BOLD)
+            self.stdscr.noutrefresh()
+            treepad.noutrefresh(shown_lines, 0, 1, 0, max_line, max_col)
+            curses.doupdate()
+            key = treepad.getkey()
+            if key in ["j", "KEY_DOWN"]:
+                self.stdscr.clear()
+                shown_lines += (max_line - 1)
+            elif key in ["k", "KEY_UP"] and shown_lines > 0:
+                self.stdscr.clear()
+                shown_lines -= (max_line - 1)
+            elif key in ["q"]:
+                return
+
+
 
         # The following lines print the directories to the screen, one window at a time.
+        """
         current_print_line = 0
         for index in range(len(directory_list)):
             if current_print_line < last_available_line-1:  # keeping last_available_line for status
@@ -218,6 +246,7 @@ class DirectoryNavigator:
 
         self.stdscr.refresh()
         self.stdscr.getch(last_available_line, col_length)
+        """
 
     def populate_current_directory(self) -> None:
         self.stdscr.clear()
