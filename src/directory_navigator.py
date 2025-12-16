@@ -114,7 +114,7 @@ class DirectoryNavigator:
             # reshow main menu
             window_y, window_x, window_end_y, window_end_x = self.show_main_menu(current_line)
 
-            message = "WebWalker"
+            message = " WebWalker "
             self.stdscr.addstr(window_y, (curses.COLS - len(message)) // 2, message, curses.A_BOLD)
             if len(DirectoryAsset.master_list) == 1:
                 message = f"You are in '{self.current_directory.name}' directory. 1 directory exists."
@@ -137,7 +137,7 @@ class DirectoryNavigator:
 
 
     def show_main_menu(self, selected_line:int=0) -> tuple[int, int, int, int]:
-        """Displays the main menu options."""
+        """Displays the main menu opc476a6117899a01412145b8e1372d637f5c3ec5ctions."""
 
         # finding the midpoint of the screen, so that options can be printed in the middle
         longest_option = len(max([option[0] for option in self.main_options.values()], key=len))
@@ -174,13 +174,15 @@ class DirectoryNavigator:
         it is recommended to be in the root directory.
         """
         self.stdscr.clear()
+        curses.curs_set(0)
 
         # This block of code is needed to handle directories with no children.
         try:
-            directory_list:list = (
-                    self.current_directory.get_asset_list_string()
+            #directory_list:list = (
+            directory_list:str = (
+                    self.current_directory.get_asset_list_string()  # this function throws the error
                     .rstrip()
-                    .split("\n")
+                    #.split("\n")
                     )
         except IndexError as e:
             self.stdscr.addstr(0, 0, str(e), self.RED_ALERT)
@@ -189,35 +191,51 @@ class DirectoryNavigator:
             self.stdscr.getch(1, len(exit_banner))
             return  # exit this function
 
+        # preparing pad
+        number_directories:int = len(directory_list.split("\n"))
+        longest_option:int = len(max(directory_list.split("\n"), key=len))
+        treepad = curses.newpad(number_directories+1, longest_option+1)  # removing the +1 causes an error
+
         # Determines how many directory lines can be shown at once.
-        last_available_line = curses.LINES - 1
+        max_line = curses.LINES - 1
+        max_col = curses.COLS - 1
 
-        # The following lines print the directories to the screen, one window at a time.
-        current_print_line = 0
-        for index in range(len(directory_list)):
-            if current_print_line < last_available_line-1:  # keeping last_available_line for status
-                self.stdscr.addstr(current_print_line, 0, directory_list[index])
-                current_print_line += 1
-            else:
-                # Printing the last directory that can be shown here; otherwise, we lose 1 directory every refresh
-                # due to the else statement still incrementing index
-                self.stdscr.addstr(current_print_line, 0, directory_list[index])
-
-                col_length:int = self.show_banner(y=last_available_line, x=0,
-                                                  message=f"{index + 1} out of {len(directory_list)} directories printed. Print any key to continue or q to quit."
-                                                  )
-                self.stdscr.refresh()
-                current_print_line = 0
-                # If user's key input is q, then quit
-                if self.stdscr.getkey(last_available_line, col_length).lower() == "q":
-                    self.stdscr.clear()
-                    return
+        treepad.addstr(0, 0, directory_list)
+        shown_lines:int = 0
+        while shown_lines < number_directories:
+            self.stdscr.addstr(0, 0, f"Directory tree for {self.current_directory.name}", curses.A_BOLD)
+            self.stdscr.noutrefresh()
+            treepad.noutrefresh(shown_lines, 0, 1, 0, max_line, max_col)
+            curses.doupdate()
+            key = treepad.getkey()
+            # if user presses j or KEY_DOWN, then move the screen down a whole screen
+            if key in ["j", "KEY_DOWN"]:
                 self.stdscr.clear()
+                shown_lines += (max_line)
+                if shown_lines < 0:
+                    shown_lines = 0
+            # if user presses SHIFT-J, then move the screen down by one line
+            elif key in ["J"]:
+                self.stdscr.clear()
+                shown_lines += 1
+                if shown_lines < 0:
+                    shown_lines = 0
+            # if user presses k or KEY_UP, then move the screen up by a whole screen
+            elif key in ["k", "KEY_UP"] and shown_lines > 0:
+                self.stdscr.clear()
+                shown_lines -= (max_line)
+            # if user presses SHIFT-K, then move the screen up by one line
+            elif key in ["K"]:
+                self.stdscr.clear()
+                shown_lines -= 1
+            # Exit if user presses q
+            elif key in ["q"]:
+                return
 
-        col_length:int = self.show_banner(y=last_available_line, x=0, message=f"All directories printed. Press any key to exit.")
-
-        self.stdscr.refresh()
-        self.stdscr.getch(last_available_line, col_length)
+            # move shown_lines to 0 if it less than 0
+            # that way, the user doesn't have to press down a lot if they went up a bunch
+            if shown_lines < 0:
+                shown_lines = 0
 
     def populate_current_directory(self) -> None:
         self.stdscr.clear()
@@ -239,7 +257,7 @@ class DirectoryNavigator:
             self.current_directory.populate_directories(input_file)
 
     def populate_child_directory(self) -> None:
-        """Calling this method evokes the populate_child_directories() for the current_directory attribute.
+        """Calling this method invokes the populate_child_directories() for the current_directory attribute.
 
         The method should walk the user through creation of the child directory, based on the directory name and the input file's name.
 
